@@ -1,0 +1,6 @@
+_backup/
+ix-forge/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
