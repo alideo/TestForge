@@ -1,16 +1,13 @@
 # Project Overview
 
-An open-source Python project. This repository provides the starting point
-for the project and this document explains its purpose, how to set up a local
-development environment, and how to get started once the source code lands.
-
-> **Note:** The project is in an early stage and does not yet ship a runnable
-> package or entrypoint. The installation and usage commands below are marked
-> as placeholders/planned so they stay truthful on a fresh clone.
+A minimal Python FastAPI application that provides a starting point for the
+project. It ships a single `GET /health` endpoint that reports service status,
+the application version, and process uptime, giving new developers a working
+base to build features on.
 
 ## Prerequisites
 
-- **Python 3.10+** — a recent interpreter is expected.
+- **Python 3.11+** — a recent interpreter is expected.
 - **A virtual environment** — use `python -m venv` (or an equivalent tool) to
   keep dependencies isolated from your system Python.
 - **pip** — the standard Python package installer, bundled with modern Python.
@@ -31,22 +28,28 @@ development environment, and how to get started once the source code lands.
    source .venv/bin/activate
    ```
 
-3. Install the project dependencies *(placeholder — no package exists yet)*:
+3. Install the runtime dependencies:
 
    ```bash
-   pip install -e .
+   pip install -r requirements.txt
    ```
 
 ## Usage
 
-Once an entrypoint is available, running the project will look like the
-illustrative example below *(placeholder — not yet runnable)*:
+Start the development server with uvicorn:
 
-```python
-from your_package import run
-
-run()
+```bash
+uvicorn app.main:app --reload
 ```
+
+Then query the health endpoint:
+
+```bash
+curl http://localhost:8000/health
+```
+
+The endpoint responds with JSON containing `status`, `version`, and
+`uptime_seconds`.
 
 ## Configuration
 
