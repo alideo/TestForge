@@ -19,3 +19,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["app*"]
+
+[tool.pytest.ini_options]
+# Tests live in tests/; _backup/ and ix-forge/ are explicitly excluded from
+# test scans (see conventions.md). Constraining testpaths keeps the canonical
+# `pytest` invocation deterministic and avoids module-name collisions with the
+# duplicated modules under _backup/.
+testpaths = ["tests"]
+norecursedirs = ["_backup", "ix-forge", ".git", "*.egg", "build", "dist"]
