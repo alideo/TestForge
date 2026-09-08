@@ -51,6 +51,27 @@ curl http://localhost:8000/health
 The endpoint responds with JSON containing `status`, `version`, and
 `uptime_seconds`.
 
+The service also exposes a readiness endpoint used by orchestrators to decide
+when to send traffic:
+
+```bash
+curl http://localhost:8000/ready
+```
+
+`GET /ready` reports whether the process is ready to accept traffic:
+
+- `200 OK` with `{"status": "ready"}` once the service is ready.
+- `503 Service Unavailable` with `{"status": "starting"}` during the startup
+  grace period.
+
+The grace period is controlled by the `READY_DELAY_SECONDS` environment
+variable (default `0`): the number of seconds after process start during which
+`/ready` reports `starting`. The value must be numeric — a malformed value
+fails fast at startup.
+
+In Kubernetes, wire the readiness probe to `/ready` and the liveness probe to
+`/health` so rolling restarts and graceful shutdowns behave correctly.
+
 ## Configuration
 
 Any environment-specific settings should be provided via placeholders — never

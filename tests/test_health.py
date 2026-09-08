@@ -9,6 +9,10 @@ Each test maps to an acceptance criterion (AC1..AC6) from the enriched PR spec:
     AC4 -- ``requirements.txt`` exists with fastapi and uvicorn pinned.
     AC5 -- ``README.md`` exists with install + run instructions.
     AC6 -- No hardcoded secrets or environment-specific values in any file.
+    AC7 -- GET ``/ready`` returns 200 ``{"status": "ready"}`` when no startup
+           delay is configured.
+    AC8 -- GET ``/ready`` returns 503 ``{"status": "starting"}`` within the
+           startup grace period; POST ``/ready`` -> 405.
 
 The tests exercise the running app via FastAPI's ``TestClient`` and read the
 packaging/documentation files directly from the repository root so the criteria
@@ -16,6 +20,7 @@ are verified exactly as they appear on disk.
 """
 
 import re
+import time
 import tomllib
 from pathlib import Path
 
@@ -227,3 +232,40 @@ def test_ac6_no_hardcoded_secrets_in_any_file():
                 if re.search(pattern, ln):
                     findings.append(f"{path.relative_to(REPO_ROOT)}: {label}: {ln.strip()}")
     assert not findings, "Possible hardcoded secrets/env-specific values:\n" + "\n".join(findings)
+
+
+# --------------------------------------------------------------------------- #
+# AC7 -- GET /ready returns 200 {"status": "ready"} when no startup delay
+# --------------------------------------------------------------------------- #
+def test_ac7_ready_returns_200_when_no_delay(client: TestClient):
+    # Default env -> READY_DELAY_SECONDS == 0, so readiness is immediate.
+    resp = client.get("/ready")
+    assert resp.status_code == 200, f"GET /ready should return 200, got {resp.status_code}"
+    ctype = resp.headers.get("content-type", "")
+    assert ctype.startswith("application/json"), f"/ready must return JSON, got {ctype!r}"
+    body = resp.json()
+    assert body == {"status": "ready"}, f'/ready body should be {{"status": "ready"}}, got {body}'
+
+
+# --------------------------------------------------------------------------- #
+# AC8 -- GET /ready returns 503 within grace period; POST /ready -> 405
+# --------------------------------------------------------------------------- #
+def test_ac8_ready_returns_503_within_grace_period(monkeypatch):
+    # READY_DELAY_SECONDS and START_TIME are captured at import, so patch the
+    # module globals (read at call time) and use a fresh client so the 503
+    # condition does not leak into the module-scoped client.
+    monkeypatch.setattr("app.main.READY_DELAY_SECONDS", 3600.0)
+    monkeypatch.setattr("app.main.START_TIME", time.time())
+    local_client = TestClient(app)
+    resp = local_client.get("/ready")
+    assert resp.status_code == 503, f"GET /ready within grace period should be 503, got {resp.status_code}"
+    ctype = resp.headers.get("content-type", "")
+    assert ctype.startswith("application/json"), f"/ready must return JSON, got {ctype!r}"
+    body = resp.json()
+    assert body == {"status": "starting"}, f'/ready body should be {{"status": "starting"}}, got {body}'
+
+
+def test_ac8_ready_only_get_allowed(client: TestClient):
+    # Negative test: /ready is a GET endpoint; POST must not be accepted.
+    resp = client.post("/ready")
+    assert resp.status_code == 405, f"POST /ready should be 405 Method Not Allowed, got {resp.status_code}"
