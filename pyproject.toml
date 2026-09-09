@@ -19,3 +19,10 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["app*"]
+
+[tool.pytest.ini_options]
+# Only the delivered test package is scanned. _backup/ (a development-time copy)
+# and ix-forge/ (platform files) are off-limits per CLAUDE.md/KB and share module
+# basenames with tests/, which would otherwise break collection.
+testpaths = ["tests"]
+norecursedirs = ["_backup", "ix-forge", ".git", "__pycache__", ".pytest_cache", ".venv"]

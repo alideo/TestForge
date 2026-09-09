@@ -48,8 +48,19 @@ Then query the health endpoint:
 curl http://localhost:8000/health
 ```
 
-The endpoint responds with JSON containing `status`, `version`, and
-`uptime_seconds`.
+The endpoint responds with JSON containing `status`, `version`,
+`uptime_seconds`, and an ISO8601 `timestamp`.
+
+You can also check readiness:
+
+```bash
+curl http://localhost:8000/health/ready
+```
+
+This returns `200` with `{"status": "ready"}` when the service can accept
+traffic, or `503` with `{"status": "unavailable"}` otherwise. Every request is
+also emitted as a single structured JSON log line (method, path, status code,
+duration in milliseconds, and timestamp).
 
 ## Configuration
 
